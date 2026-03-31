@@ -9,7 +9,10 @@ buildFuture: false
 buildExpired: false
 enableEmoji: true
 pygmentsUseClasses: true
-# googleAnalytics: "G-XXXXXXXXXX"  # Uncomment and add your GA4 ID when ready
+# Google Analytics — uncomment and add your GA4 ID when ready
+# services:
+#   googleAnalytics:
+#     ID: "G-XXXXXXXXXX"
 
 # Performance optimizations
 minify:
@@ -194,11 +197,7 @@ markup:
 privacy:
   disqus:
     disable: true
-  googleAnalytics:
-    anonymizeIP: true
-    disable: true   # Set to false and add GA4 ID above when ready
-    respectDoNotTrack: true
-    useSessionStorage: true
+  # googleAnalytics: configure under services.googleAnalytics.ID above
   instagram:
     disable: true
   x:
