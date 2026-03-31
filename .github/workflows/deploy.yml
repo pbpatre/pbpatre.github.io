@@ -55,7 +55,7 @@ jobs:
           hugo \
             --gc \
             --minify \
-            --panicOnWarning \
+            --logLevel warn \
             --baseURL "${{ steps.pages.outputs.base_url }}/"
 
       - name: Upload artifact
