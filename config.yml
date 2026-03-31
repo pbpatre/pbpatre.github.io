@@ -2,13 +2,13 @@ baseURL: "https://pbpatre.github.io/"
 title: "Pratik Patre"
 languageCode: "en-us"
 theme: "PaperMod"
-paginate: 10
+pagination:
+  pagerSize: 10
 enableRobotsTXT: true
 buildDrafts: false
 buildFuture: false
 buildExpired: false
 enableEmoji: true
-pygmentsUseClasses: true
 # Google Analytics — uncomment and add your GA4 ID when ready
 # services:
 #   googleAnalytics:
@@ -64,8 +64,8 @@ params:
       url: "https://linkedin.com/in/pratikpatre"
     - name: twitter
       url: "https://twitter.com/pratikpatre"
-    - name: email
-      # url: "mailto:your.email@example.com"  # Uncomment and add your email
+    # - name: email
+    #   url: "mailto:your.email@example.com"  # Uncomment and add your email
     - name: rss
       url: "/index.xml"
 
