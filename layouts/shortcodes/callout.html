@@ -1,0 +1,36 @@
+{{/* 
+  Callout shortcode
+  Usage: {{< callout type="note" title="Optional Title" >}} content {{< /callout >}}
+  Types: note, tip, warning, danger, info
+*/}}
+{{ $type := .Get "type" | default "note" }}
+{{ $title := .Get "title" }}
+
+{{ $icons := dict
+  "note"    "📝"
+  "tip"     "💡"
+  "warning" "⚠️"
+  "danger"  "🚨"
+  "info"    "ℹ️"
+}}
+
+{{ $defaultTitles := dict
+  "note"    "Note"
+  "tip"     "Tip"
+  "warning" "Warning"
+  "danger"  "Danger"
+  "info"    "Info"
+}}
+
+{{ $icon := index $icons $type | default "📝" }}
+{{ $displayTitle := $title | default (index $defaultTitles $type) | default "Note" }}
+
+<div class="callout callout-{{ $type }}">
+  <div class="callout-header">
+    <span class="callout-icon">{{ $icon }}</span>
+    <span class="callout-title">{{ $displayTitle }}</span>
+  </div>
+  <div class="callout-body">
+    {{ .Inner | markdownify }}
+  </div>
+</div>

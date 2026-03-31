@@ -1,0 +1,279 @@
+/* ============================================================
+   Pratik Patre Blog — Custom CSS Overrides
+   Applied on top of PaperMod theme
+   ============================================================ */
+
+/* ── Typography ────────────────────────────────────────────── */
+:root {
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+  --content-width: 780px;
+  --reading-font-size: 1.05rem;
+  --reading-line-height: 1.85;
+}
+
+body {
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.post-content {
+  font-size: var(--reading-font-size);
+  line-height: var(--reading-line-height);
+  max-width: var(--content-width);
+}
+
+/* ── Code Blocks ────────────────────────────────────────────── */
+code, kbd, pre {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+}
+
+.highlight {
+  border-radius: 8px;
+  margin: 1.5rem 0;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+}
+
+.highlight pre {
+  padding: 1.2rem 1.4rem;
+  overflow-x: auto;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Line numbers */
+.highlight .lntd:first-child {
+  padding-right: 1rem;
+  user-select: none;
+  opacity: 0.4;
+}
+
+/* Inline code */
+.post-content :not(pre) > code {
+  background: var(--code-bg, rgba(175, 184, 193, 0.12));
+  border-radius: 4px;
+  padding: 0.15em 0.4em;
+  font-size: 0.85em;
+  border: 1px solid var(--border, rgba(0,0,0,0.08));
+}
+
+/* ── Callout Boxes ──────────────────────────────────────────── */
+.callout {
+  border-radius: 8px;
+  margin: 1.5rem 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid transparent;
+}
+
+.callout-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+}
+
+.callout-body {
+  padding: 0.75rem 1rem 0.9rem;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.callout-body > *:first-child { margin-top: 0; }
+.callout-body > *:last-child  { margin-bottom: 0; }
+
+/* Callout type colours */
+.callout-note    { border-color: #3b82f6; background: rgba(59,130,246,0.06); }
+.callout-note .callout-header    { background: rgba(59,130,246,0.12); color: #2563eb; }
+
+.callout-tip     { border-color: #10b981; background: rgba(16,185,129,0.06); }
+.callout-tip .callout-header     { background: rgba(16,185,129,0.12); color: #059669; }
+
+.callout-warning { border-color: #f59e0b; background: rgba(245,158,11,0.06); }
+.callout-warning .callout-header { background: rgba(245,158,11,0.12); color: #d97706; }
+
+.callout-danger  { border-color: #ef4444; background: rgba(239,68,68,0.06); }
+.callout-danger .callout-header  { background: rgba(239,68,68,0.12); color: #dc2626; }
+
+.callout-info    { border-color: #8b5cf6; background: rgba(139,92,246,0.06); }
+.callout-info .callout-header    { background: rgba(139,92,246,0.12); color: #7c3aed; }
+
+/* Dark mode callout adjustments */
+.dark .callout-note    { background: rgba(59,130,246,0.08);  border-color: rgba(59,130,246,0.4); }
+.dark .callout-tip     { background: rgba(16,185,129,0.08);  border-color: rgba(16,185,129,0.4); }
+.dark .callout-warning { background: rgba(245,158,11,0.08);  border-color: rgba(245,158,11,0.4); }
+.dark .callout-danger  { background: rgba(239,68,68,0.08);   border-color: rgba(239,68,68,0.4); }
+.dark .callout-info    { background: rgba(139,92,246,0.08);  border-color: rgba(139,92,246,0.4); }
+
+/* ── Series Navigation ──────────────────────────────────────── */
+.series-nav {
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  margin: 2rem 0;
+  overflow: hidden;
+  background: var(--entry, #f9fafb);
+}
+
+.dark .series-nav {
+  background: var(--entry, #1e1e2e);
+  border-color: rgba(255,255,255,0.1);
+}
+
+.series-nav-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.7rem 1rem;
+  background: rgba(0,0,0,0.03);
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  font-size: 0.88rem;
+}
+
+.dark .series-nav-header {
+  background: rgba(255,255,255,0.03);
+  border-color: rgba(255,255,255,0.08);
+}
+
+.series-nav-progress {
+  font-size: 0.82rem;
+  opacity: 0.6;
+}
+
+.series-nav-links {
+  display: flex;
+  gap: 1rem;
+  padding: 0.8rem 1rem;
+  flex-wrap: wrap;
+}
+
+.series-nav-prev,
+.series-nav-next {
+  flex: 1;
+  min-width: 200px;
+  font-size: 0.9rem;
+  text-decoration: none;
+  color: var(--primary, #1d4ed8);
+  padding: 0.4rem 0;
+}
+
+.series-nav-prev:hover,
+.series-nav-next:hover { text-decoration: underline; }
+
+.series-nav-toc {
+  border-top: 1px solid var(--border, #e5e7eb);
+  padding: 0.6rem 1rem;
+  font-size: 0.88rem;
+}
+
+.series-nav-toc summary { cursor: pointer; font-weight: 600; padding: 0.2rem 0; }
+.series-nav-toc ol { margin: 0.5rem 0 0 1.2rem; padding: 0; }
+.series-nav-toc li { margin: 0.3rem 0; }
+.series-nav-current { font-weight: 700; }
+
+/* ── Table of Contents ──────────────────────────────────────── */
+#TableOfContents {
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+#TableOfContents a {
+  text-decoration: none;
+  color: inherit;
+  opacity: 0.75;
+  transition: opacity 0.15s;
+}
+
+#TableOfContents a:hover { opacity: 1; }
+
+/* ── Tables ─────────────────────────────────────────────────── */
+.post-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.5rem 0;
+  font-size: 0.9rem;
+  overflow-x: auto;
+  display: block;
+}
+
+.post-content th {
+  background: rgba(0,0,0,0.05);
+  font-weight: 600;
+  text-align: left;
+}
+
+.dark .post-content th {
+  background: rgba(255,255,255,0.07);
+}
+
+.post-content th,
+.post-content td {
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--border, #e5e7eb);
+}
+
+.post-content tr:nth-child(even) td {
+  background: rgba(0,0,0,0.02);
+}
+
+.dark .post-content tr:nth-child(even) td {
+  background: rgba(255,255,255,0.02);
+}
+
+/* ── Mermaid Diagrams ───────────────────────────────────────── */
+.mermaid {
+  display: flex;
+  justify-content: center;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+}
+
+/* ── Post Meta ──────────────────────────────────────────────── */
+.post-meta {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+/* ── Hero / Profile ─────────────────────────────────────────── */
+.profile img {
+  border-radius: 50%;
+  border: 3px solid var(--primary, #1d4ed8);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+}
+
+/* ── Footer ─────────────────────────────────────────────────── */
+.footer-custom {
+  margin-top: 0.5rem;
+  font-size: 0.82rem;
+  opacity: 0.6;
+  text-align: center;
+}
+
+.footer-custom a { text-decoration: none; }
+.footer-custom a:hover { text-decoration: underline; }
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  :root {
+    --reading-font-size: 1rem;
+    --reading-line-height: 1.75;
+  }
+
+  .series-nav-links { flex-direction: column; }
+  .series-nav-prev, .series-nav-next { min-width: unset; }
+  .highlight pre { font-size: 0.82rem; }
+}
+
+/* ── Accessibility ──────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--primary, #1d4ed8);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+/* ── Smooth scrolling ───────────────────────────────────────── */
+html { scroll-behavior: smooth; }

@@ -1,0 +1,218 @@
+baseURL: "https://pbpatre.github.io/"
+title: "Pratik Patre"
+languageCode: "en-us"
+theme: "PaperMod"
+paginate: 10
+enableRobotsTXT: true
+buildDrafts: false
+buildFuture: false
+buildExpired: false
+enableEmoji: true
+pygmentsUseClasses: true
+# googleAnalytics: "G-XXXXXXXXXX"  # Uncomment and add your GA4 ID when ready
+
+# Performance optimizations
+minify:
+  disableXML: true
+  minifyOutput: true
+
+# Metadata
+params:
+  env: production
+  title: "Pratik Patre"
+  description: "Principal ML Systems Engineer at Atlassian. Writing about LLM production systems, ML infrastructure, and AI engineering."
+  keywords:
+    - LLM Production
+    - Machine Learning Engineering
+    - MLOps
+    - AI Systems
+    - Model Deployment
+    - Kubernetes
+    - Production ML
+    - Feature Stores
+    - Model Serving
+  author: "Pratik Patre"
+
+  # Profile mode for homepage
+  profileMode:
+    enabled: true
+    title: "Pratik Patre"
+    subtitle: |
+      Principal ML Systems Engineer @ Atlassian
+
+      Writing about LLM production systems, ML infrastructure, and lessons from deploying AI at scale.
+    imageUrl: "images/profile.jpg"
+    imageWidth: 180
+    imageHeight: 180
+    imageTitle: "Pratik Patre"
+    buttons:
+      - name: LLM Production
+        url: /llm-production/
+      - name: ML Engineering
+        url: /ml-engineering/
+      - name: About
+        url: /about/
+
+  # Social links
+  socialIcons:
+    - name: github
+      url: "https://github.com/pbpatre"
+    - name: linkedin
+      url: "https://linkedin.com/in/pratikpatre"
+    - name: twitter
+      url: "https://twitter.com/pratikpatre"
+    - name: email
+      # url: "mailto:your.email@example.com"  # Uncomment and add your email
+    - name: rss
+      url: "/index.xml"
+
+  # Content settings
+  ShowReadingTime: true
+  ShowShareButtons: true
+  ShowPostNavLinks: true
+  ShowBreadCrumbs: true
+  ShowCodeCopyButtons: true
+  ShowWordCount: true
+  ShowRssButtonInSectionTermList: true
+  UseHugoToc: true
+  disableSpecial1stPost: false
+  disableScrollToTop: false
+  comments: false
+  hidemeta: false
+  hideSummary: false
+  showtoc: true
+  tocopen: true
+
+  # Homepage settings
+  homeInfoParams:
+    Title: "Latest Posts"
+    Content: ""
+
+  # SEO and social
+  images: ["images/og-image.jpg"]
+
+  # Search configuration
+  fuseOpts:
+    isCaseSensitive: false
+    shouldSort: true
+    location: 0
+    distance: 1000
+    threshold: 0.4
+    minMatchCharLength: 0
+    keys: ["title", "permalink", "summary", "content"]
+
+  # Assets & favicon
+  assets:
+    disableHLJS: false
+    disableFingerprinting: false
+    favicon: "images/favicon.ico"
+    favicon16x16: "images/favicon-16x16.png"
+    favicon32x32: "images/favicon-32x32.png"
+    apple_touch_icon: "images/apple-touch-icon.png"
+
+  # Label customization
+  label:
+    text: "Pratik Patre"
+    icon: "images/favicon.ico"
+    iconHeight: 35
+
+  # Analytics privacy
+  analytics:
+    google:
+      SiteVerificationTag: ""  # Add Google Search Console verification tag here
+
+  # Cover image settings
+  cover:
+    linkFullImages: true
+    responsiveImages: true
+    hidden: false
+
+# Menu configuration
+menu:
+  main:
+    - identifier: llm-production
+      name: LLM Production
+      url: /llm-production/
+      weight: 10
+    - identifier: ml-engineering
+      name: ML Engineering
+      url: /ml-engineering/
+      weight: 20
+    - identifier: tags
+      name: Tags
+      url: /tags/
+      weight: 50
+    - identifier: search
+      name: Search
+      url: /search/
+      weight: 60
+    - identifier: about
+      name: About
+      url: /about/
+      weight: 70
+
+# Taxonomies
+taxonomies:
+  category: categories
+  tag: tags
+  series: series
+
+# Permalinks - clean URLs without dates
+permalinks:
+  llm-production: /llm-production/:slug/
+  ml-engineering: /ml-engineering/:slug/
+  research: /research/:slug/
+  engineering: /engineering/:slug/
+
+# Output formats
+outputs:
+  home:
+    - HTML
+    - RSS
+    - JSON  # Required for search functionality
+
+# Markup configuration
+markup:
+  goldmark:
+    renderer:
+      unsafe: true  # Allow HTML in markdown for custom components
+  highlight:
+    anchorLineNos: false
+    codeFences: true
+    guessSyntax: true
+    lineNos: true
+    lineNumbersInTable: true
+    noClasses: false
+    style: monokai
+    tabWidth: 4
+  tableOfContents:
+    endLevel: 3
+    ordered: false
+    startLevel: 2
+
+# Privacy configuration (GDPR-friendly)
+privacy:
+  disqus:
+    disable: true
+  googleAnalytics:
+    anonymizeIP: true
+    disable: true   # Set to false and add GA4 ID above when ready
+    respectDoNotTrack: true
+    useSessionStorage: true
+  instagram:
+    disable: true
+  x:
+    disable: false
+    enableDNT: true
+    simple: true
+  vimeo:
+    disable: true
+  youtube:
+    disable: false
+    privacyEnhanced: true
+
+# Sitemap configuration
+sitemap:
+  changefreq: weekly
+  filename: sitemap.xml
+  priority: 0.5

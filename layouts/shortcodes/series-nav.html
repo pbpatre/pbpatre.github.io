@@ -1,0 +1,55 @@
+{{/*
+  Series Navigation shortcode
+  Usage: {{< series-nav series="series-name" current="3" total="5" >}}
+  Displays prev/next links within a series and overall progress.
+*/}}
+{{ $seriesName := .Get "series" }}
+{{ $current := .Get "current" | int }}
+{{ $total := .Get "total" | int }}
+
+{{ if $seriesName }}
+{{ $series := where .Page.Site.Pages ".Params.series" $seriesName }}
+{{ $seriesSorted := sort $series ".Params.series_weight" "asc" }}
+{{ $currentIdx := 0 }}
+{{ range $i, $p := $seriesSorted }}
+  {{ if eq $p.Permalink $.Page.Permalink }}
+    {{ $currentIdx = $i }}
+  {{ end }}
+{{ end }}
+
+<nav class="series-nav">
+  <div class="series-nav-header">
+    <span class="series-nav-label">Series: <strong>{{ $seriesName | humanize }}</strong></span>
+    <span class="series-nav-progress">
+      Part {{ add $currentIdx 1 }} of {{ len $seriesSorted }}
+    </span>
+  </div>
+
+  <div class="series-nav-links">
+    {{ if gt $currentIdx 0 }}
+    {{ $prev := index $seriesSorted (sub $currentIdx 1) }}
+    <a class="series-nav-prev" href="{{ $prev.Permalink }}">
+      ← Previous: {{ $prev.Title }}
+    </a>
+    {{ end }}
+
+    {{ if lt $currentIdx (sub (len $seriesSorted) 1) }}
+    {{ $next := index $seriesSorted (add $currentIdx 1) }}
+    <a class="series-nav-next" href="{{ $next.Permalink }}">
+      Next: {{ $next.Title }} →
+    </a>
+    {{ end }}
+  </div>
+
+  <details class="series-nav-toc">
+    <summary>All parts in this series</summary>
+    <ol>
+    {{ range $i, $p := $seriesSorted }}
+      <li {{ if eq $p.Permalink $.Page.Permalink }}class="series-nav-current"{{ end }}>
+        <a href="{{ $p.Permalink }}">{{ $p.Title }}</a>
+      </li>
+    {{ end }}
+    </ol>
+  </details>
+</nav>
+{{ end }}
