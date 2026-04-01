@@ -1,11 +1,11 @@
 ---
-title: "The Preprocessing Barrier (Part 2): How CPU Preprocessing Starves Your GPUs"
+title: "The Preprocessing Barrier (Part 2): How Preprocessing Starves Your GPUs"
 date: 2024-02-12
 draft: false
 slug: "preprocessing-barrier-part-2"
 author: "Pratik Patre"
-description: "High GPU utilization but flat throughput? Your inference server may be suffering from the Utilization Illusion — where the GPU looks busy but is actually idling between requests, starved by Python preprocessing."
-summary: "We benchmark vLLM and SGLang under saturation load and expose the Utilization Illusion: high nvidia-smi numbers masking GPU starvation caused by Python preprocessing. Then we show how decoupled preprocessing recovers 40% of hidden GPU capacity."
+description: "High GPU utilization but flat throughput? Your inference server may be suffering from the Utilization Illusion — where the GPU looks busy but is actually idling between batches, starved by Python preprocessing."
+summary: "I benchmark vLLM and SGLang under saturation load and expose the Utilization Illusion: high nvidia-smi numbers masking GPU starvation caused by Python preprocessing. Then I show how decoupled preprocessing recovers 40% of hidden GPU capacity."
 tags: ["LLM", "Inference", "vLLM", "SGLang", "GPU", "Preprocessing", "Production", "Benchmarks", "Radix Attention", "Throughput"]
 categories: ["Deep ML Systems"]
 series: ["The Preprocessing Barrier"]
@@ -22,14 +22,14 @@ ShowShareButtons: true
 ShowPostNavLinks: true
 ---
 
-[Part 1](https://pbpatre.github.io/deep-ml-systems/preprocessing-barrier-in-llms/) established a baseline: Python's GIL turns what looks like a 7% overhead in single-request profiling into a hard throughput ceiling at production concurrency. The obvious counter-argument is that GPU inference time dwarfs CPU preprocessing time, so the bottleneck does not matter in practice.
+[Part 1](/deep-ml-systems/preprocessing-barrier-in-llms/) established that Python's GIL turns what looks like a 7% preprocessing overhead into a hard throughput ceiling at production concurrency. The natural counter-argument: GPU inference time dwarfs CPU preprocessing time, so the bottleneck should not matter in practice.
 
-This post tests that argument directly. We pushed vLLM and SGLang to saturation under realistic RAG workloads and found something more troubling than slowness: the metrics lie. `nvidia-smi` reports 95% GPU utilization while throughput stays flat and latency degrades 18×. We call this the **Utilization Illusion** — and it is a direct consequence of coupled Python preprocessing.
+I tested that argument directly. Pushing vLLM and SGLang to saturation under realistic RAG workloads surfaced something more troubling than slowness: **the metrics lie.** `nvidia-smi` reports 95% GPU utilization while throughput stays flat and latency degrades 18×. I call this the Utilization Illusion — and it is a direct consequence of coupled Python preprocessing.
 
-We then show what happens when you break the coupling.
+This post traces the illusion through three frameworks, then breaks it.
 
 {{< callout type="info" title="Benchmark Environment" >}}
-**GPU:** NVIDIA L40S · **Frameworks:** vLLM, SGLang · **Workload:** Complex chat history (100 turns, ~2,500 tokens) · **Concurrency:** 20 users (interactive) vs. 400 users (saturation) · Full experiment code on [GitHub](https://github.com/pbpatre/llm-system-benchmarks/tree/main/preprocessing/benchmarks/experiments)
+**GPU:** NVIDIA L40S · **Frameworks:** vLLM, SGLang · **Model:** Qwen2.5-0.5B-Instruct · **Workload:** 100-turn chat history (~2,500 tokens) · **Concurrency:** 20 users (interactive) vs. 400 users (saturation) · All experiment code on [GitHub](https://github.com/pbpatre/llm-system-benchmarks/tree/main/preprocessing/benchmarks/experiments)
 {{< /callout >}}
 
 ---
@@ -48,55 +48,76 @@ This architectural constraint sets up the experiments that follow.
 
 ## The Utilization Illusion: vLLM Under Saturation
 
-We designed a stress test to expose the scheduler bottleneck in vLLM under realistic load ([experiment code](https://github.com/pbpatre/llm-system-benchmarks/blob/main/preprocessing/benchmarks/experiments/exp5_vllm_latency_wall.py)).
+The first experiment targeted vLLM's scheduler under realistic load. Each request carried 100 turns of chat history — representative of a RAG-augmented agent loop — and I measured what happened when concurrent users scaled from 20 to 400 ([experiment code](https://github.com/pbpatre/llm-system-benchmarks/blob/main/preprocessing/benchmarks/experiments/exp5_vllm_latency_wall.py)).
 
-| Scenario | Concurrency | Throughput (req/s) | GPU Util | P50 Latency |
-|----------|------------|-------------------|---------|-------------|
+| Scenario | Concurrent Users | Throughput (req/s) | GPU Utilization | P50 Latency |
+|----------|-----------------|-------------------|----------------|-------------|
 | Interactive | 20 | 133.75 | 92.61% | 150 ms |
 | Saturation | 400 | 133.99 | 95.42% | 2,745 ms |
 
 A 20× increase in concurrent load. Throughput: flat. Latency: 18× worse. GPU utilization: went *up*.
 
-This is the Utilization Illusion. The Python scheduler was so overwhelmed by Jinja2 templating and tokenization that it could only feed the GPU at ~133 req/s regardless of load. The GPU processed those requests quickly, then waited for the CPU to assemble the next batch — appearing busy while repeatedly idling. What `nvidia-smi` captures is duty cycle, not efficiency. The gap between duty cycle and **Model FLOPS Utilization (MFU)** is where the capacity disappeared.
+This is the Utilization Illusion. The Python scheduler was so overwhelmed by Jinja2 templating and tokenization that it could only feed the GPU at ~134 req/s regardless of load. The GPU processed those requests quickly, then waited for the CPU to assemble the next batch — appearing busy while repeatedly idling. What `nvidia-smi` captures is duty cycle, not efficiency. The gap between duty cycle and **Model FLOPS Utilization (MFU)** is where the capacity disappeared.
 
 ---
 
 ## The Radix Paradox: When GPU Optimization Cannot Reach the GPU
 
-The SGLang experiment was designed to test whether Radix Attention's KV cache reuse could break the bottleneck. We compared two traffic patterns ([experiment code](https://github.com/pbpatre/llm-system-benchmarks/blob/main/preprocessing/benchmarks/experiments/exp6_sglang_radix_latency.py)):
+The next experiment tested whether SGLang's Radix Attention — a genuine GPU-side innovation — could break through the bottleneck. I compared two traffic patterns ([experiment code](https://github.com/pbpatre/llm-system-benchmarks/blob/main/preprocessing/benchmarks/experiments/exp6_sglang_radix_latency.py)):
 
 - **Cache miss:** Every request has a unique prompt history. Attention computed from scratch.
-- **Cache hit:** All requests share a long common prefix (simulating a shared RAG system prompt). The Radix Tree reuses the KV cache — GPU work for that prefix is reduced to near zero.
+- **Cache hit:** All requests share a long common prefix (simulating a shared RAG system prompt). The Radix Tree reuses the KV cache — GPU work for that prefix drops to near zero.
 
-| Load | Concurrency | Request Type | Throughput (req/s) | P50 Latency |
-|------|------------|-------------|-------------------|-------------|
-| Low | 20 | Cache miss | 115.10 | 164 ms |
-| Low | 20 | Cache hit | 245.84 | 67 ms |
-| High | 400 | Cache miss | 219.81 | 1,835 ms |
-| High | 400 | Cache hit | 227.52 | 1,780 ms |
+| Load | Concurrent Users | Cache State | Throughput (req/s) | P50 Latency |
+|------|-----------------|-------------|-------------------|-------------|
+| Low | 20 | Miss | 115.10 | 164 ms |
+| Low | 20 | Hit | 245.84 | 67 ms |
+| High | 400 | Miss | 219.81 | 1,835 ms |
+| High | 400 | Hit | 227.52 | 1,780 ms |
 
 At low concurrency, Radix Attention works as advertised — a cache hit cuts latency by 60% (164 ms → 67 ms) and nearly doubles throughput. The CPU is not yet saturated, so the GPU savings propagate to the user.
 
 At high concurrency, the benefit collapses. The difference between full GPU computation and near-zero GPU computation is 55 ms — less than 3% of total latency. A request with a 100% cache hit still spent **1.78 seconds** waiting in the Python queue to be tokenized.
 
-The mechanism is clear: SGLang cannot consult the Radix Tree until it has the token sequence. Tokenization happens on the CPU. At saturation, the upstream CPU queue completely masks the downstream GPU optimization. **A 0 ms GPU computation cannot save you if the CPU takes 2 seconds to prepare the data.**
+The mechanism is clear: SGLang cannot consult the Radix Tree until it has the token sequence. Tokenization happens on the CPU. At saturation, the upstream CPU queue completely masks the downstream GPU optimization. **A 0 ms GPU computation cannot help if the CPU takes 2 seconds to prepare the input.**
 
 ---
 
 ## Breaking the Coupling: Decoupled Preprocessing
 
-The pattern that breaks this bottleneck is architectural: move Jinja2 templating and tokenization out of the inference server and into a separate process — a preprocessing gateway that delivers pre-tokenized tensors to the GPU worker, which never touches raw text.
+The pattern that breaks this bottleneck is architectural: move Jinja2 templating and tokenization out of the inference server and into a separate preprocessing gateway that delivers pre-tokenized data to the GPU worker.
 
-This is the approach natively supported by [NVIDIA Triton Inference Server](https://developer.nvidia.com/dynamo-triton) via ensemble pipelines. We simulated it with a separate Python process (standing in for a Rust-based gateway) to isolate the effect of decoupling alone.
+This is the approach natively supported by [NVIDIA Triton Inference Server](https://developer.nvidia.com/dynamo-triton) via ensemble pipelines. To isolate the effect of decoupling alone, I built a simulated sidecar using two Rust-backed libraries that bypass CPython entirely for the heavy work ([experiment code](https://github.com/pbpatre/llm-system-benchmarks/blob/main/preprocessing/benchmarks/experiments/exp7_sidecar_latency.py)):
+
+- **[minijinja](https://github.com/mitsuhiko/minijinja)** — A Rust implementation of Jinja2, called from Python. Replaces CPython's GIL-bound Jinja2 template rendering.
+- **HuggingFace Tokenizers** — The same Rust-backed tokenizer from Part 1, which releases the GIL during execution.
+
+The sidecar process applies the chat template via `minijinja`, tokenizes the result, and sends the raw `input_ids` directly to SGLang's `/generate` endpoint — completely bypassing the `/v1/chat/completions` endpoint that would trigger server-side Jinja2 + tokenization.
+
+```python
+# Sidecar: Rust-backed preprocessing (GIL-free)
+def sidecar_process(messages):
+    # 1. Template with minijinja (Rust) instead of Jinja2 (Python)
+    prompt_str = env.render_template("chat",
+        system=messages[0]["content"],
+        history=messages[1:]
+    )
+    # 2. Tokenize with HF Tokenizers (Rust, releases GIL)
+    input_ids = tokenizer.encode(prompt_str)
+    return input_ids
+
+# Monolith: raw messages → /v1/chat/completions (server-side Jinja + tokenizer)
+# Sidecar:  input_ids   → /generate           (GPU only, no preprocessing)
+```
 
 ### Phase 1: The Base Tax
 
-First, we measured the raw per-request savings at moderate concurrency (50 users) with long contexts (~2,500 tokens) — before queuing effects compound the cost ([experiment code](https://github.com/pbpatre/llm-system-benchmarks/blob/main/preprocessing/benchmarks/experiments/exp7_sidecar_latency.py)).
+First, I measured the raw per-request savings at moderate concurrency (50 users) with long contexts (~2,500 tokens) — before queuing effects compound the cost.
 
-| Architecture | Concurrency | Throughput (req/s) | P50 Latency |
-|-------------|------------|-------------------|-------------|
+| Architecture | Concurrent Users | Throughput (req/s) | P50 Latency |
+|-------------|-----------------|-------------------|-------------|
 | Monolith | 50 | 118.44 | 379 ms |
-| Decoupled | 50 | 178.58 | 212 ms |
+| Decoupled (sidecar) | 50 | 178.58 | 212 ms |
 
 Offloading preprocessing saves **~167 ms per request** at moderate load — before any queuing dynamics. This is the base tax that every request pays in a monolithic setup.
 
@@ -104,42 +125,42 @@ Offloading preprocessing saves **~167 ms per request** at moderate load — befo
 
 At saturation (400 users), that 167 ms base saving has a nonlinear effect on total latency through Kingman's formula: reducing service time at a bottleneck reduces queue depth super-linearly.
 
-| Architecture | Concurrency | Throughput (req/s) | P50 Latency | Speedup |
-|-------------|------------|-------------------|-------------|---------|
+| Architecture | Concurrent Users | Throughput (req/s) | P50 Latency | Speedup |
+|-------------|-----------------|-------------------|-------------|--------|
 | Monolith | 400 | 178.58 | 1,997 ms | — |
-| Decoupled | 400 | 302.60 | 1,017 ms | **1.96×** |
+| Decoupled (sidecar) | 400 | 302.60 | 1,017 ms | **1.96×** |
 
 ![Latency and throughput comparison across monolith and decoupled architectures at low and high concurrency](/images/posts/post-preprocessing-p2-1.jpg)
 *Cross-experiment comparison: decoupled preprocessing vs monolith at 50 and 400 concurrent users*
 
 Three results stand out:
 
-**Throughput increased 70%.** The GPU was finally receiving a steady stream of tensors rather than a drip feed assembled by an overwhelmed Python scheduler. Throughput jumped from ~178 req/s to 302 req/s. The monolith was leaving **40% of the GPU's capacity on the table**.
+**Throughput increased 70%.** The GPU was finally receiving a steady stream of tokens rather than a drip feed assembled by an overwhelmed Python scheduler. Throughput jumped from ~178 req/s to 302 req/s. The monolith was leaving **40% of the GPU's capacity on the table**.
 
-**Latency dropped by ~1 second.** The 167 ms base tax, compounded through queuing at 400 concurrent users, was responsible for nearly a full second of P50 wait time. This is Kingman's formula in action — small reductions in service time at a saturated bottleneck have outsized effects on queue length.
+**Latency dropped by ~1 second at P50.** The 167 ms base tax, compounded through queuing at 400 concurrent users, was responsible for nearly a full second of wait time. This is Kingman's formula in action — small reductions in service time at a saturated bottleneck produce outsized reductions in queue length.
 
-**A residual floor remains at ~1,017 ms.** This represents the cost of Python's HTTP handling. Even without tokenization, deserializing 400 large JSON payloads and managing TCP connections saturates the Uvicorn event loop. Removing this floor requires moving the networking layer to Rust or C++ — a separate optimization.
+**A residual floor remains at ~1,017 ms.** Even without tokenization, deserializing 400 large JSON payloads and managing TCP connections saturates the Uvicorn event loop. This ~1 second floor is the cost of Python's HTTP stack itself — `asyncio`, Pydantic validation, and ASGI overhead. Breaking below it requires moving the entire networking layer to Rust or C++, which is a separate optimization.
 
 ---
 
-## What This Means for Production System Design
+## Three Principles from Saturation Testing
 
-The experiments above surface three principles that do not show up in single-request benchmarks:
+Single-request profiling hides all three of these. They only surface when you push the system to saturation.
 
 **Utilization metrics require interpretation.** `nvidia-smi` reports duty cycle, not efficiency. A GPU that processes small batches and idles between them will show high utilization while delivering a fraction of its theoretical MFU. The right metric is throughput per dollar, not utilization percentage.
 
-**GPU-side optimizations have a CPU-side prerequisite.** Radix Attention, speculative decoding, and paged attention are all real wins — but they operate downstream of preprocessing. At high concurrency, the CPU queue absorbs the gains before they reach the user. Optimizing the GPU without first clearing the CPU bottleneck is adding lanes to a highway whose on-ramp is congested.
+**GPU-side optimizations have a CPU-side prerequisite.** Radix Attention, speculative decoding, and paged attention are real wins — but they operate downstream of preprocessing. At high concurrency, the CPU queue absorbs the gains before they reach the user. Optimizing the GPU without first clearing the CPU bottleneck compounds latency without improving throughput.
 
-**Decoupling is an architectural decision, not a performance tuning knob.** You cannot thread your way out of the GIL (as Part 1 showed), and you cannot cache your way past a saturated tokenizer (as this post shows). The fix requires structural separation: preprocessing as a dedicated infrastructure layer that delivers tensors, and an inference server that consumes them.
+**Decoupling is an architectural decision, not a tuning knob.** You cannot thread your way out of the GIL ([Part 1](/deep-ml-systems/preprocessing-barrier-in-llms/) showed this), and you cannot cache your way past a saturated tokenizer (this post showed this). The fix requires structural separation: preprocessing as a dedicated layer — ideally Rust-backed — that delivers token IDs, and an inference server that consumes them.
 
 ---
 
 ## What's Next
 
-The decoupled architecture removes the Python bottleneck, but introduces new questions: how do you scale the preprocessing tier independently? What happens to latency when the gateway is remote? How does this interact with speculative decoding or prefix caching?
+The decoupled architecture removes the Python preprocessing bottleneck, but introduces new questions: how do you scale the preprocessing tier independently? What happens to latency when the gateway is remote? How does this interact with speculative decoding or prefix caching?
 
 The next post will cover **production deployment patterns** for decoupled preprocessing — including the tradeoffs between in-process, sidecar, and remote gateway architectures.
 
 ---
 
-**Code:** All five experiments from this post — vLLM saturation, SGLang Radix paradox, and the three decoupled preprocessing benchmarks — are in the [GitHub repository](https://github.com/pbpatre/llm-system-benchmarks/tree/main/preprocessing/benchmarks/experiments).
+**Code:** All three experiments from this post — vLLM saturation ([exp5](https://github.com/pbpatre/llm-system-benchmarks/blob/main/preprocessing/benchmarks/experiments/exp5_vllm_latency_wall.py)), SGLang Radix ([exp6](https://github.com/pbpatre/llm-system-benchmarks/blob/main/preprocessing/benchmarks/experiments/exp6_sglang_radix_latency.py)), and decoupled sidecar ([exp7](https://github.com/pbpatre/llm-system-benchmarks/blob/main/preprocessing/benchmarks/experiments/exp7_sidecar_latency.py)) — are in the [GitHub repository](https://github.com/pbpatre/llm-system-benchmarks/tree/main/preprocessing/benchmarks/experiments).

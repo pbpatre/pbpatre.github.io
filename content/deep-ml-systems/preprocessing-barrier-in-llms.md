@@ -8,6 +8,8 @@ description: "GPU utilization hovering at 60-70%? The bottleneck might be your C
 summary: "We profile the three-stage CPU preprocessing pipeline in LLM inference — Jinja templating, tokenization, and collation — and reveal how Python's GIL prevents parallelism from solving the bottleneck at scale."
 tags: ["LLM", "Inference", "CPU", "Preprocessing", "GIL", "Performance", "Benchmarks", "vLLM"]
 categories: ["Deep ML Systems"]
+series: ["The Preprocessing Barrier"]
+series_weight: 1
 cover:
   image: ""
   hidden: true
@@ -191,13 +193,13 @@ Single-request profiling is a trap. The numbers look fine — 1.2 ms total, 0.08
 
 ---
 
-## What's Next?
+## What's Next
 
-Identifying the bottleneck is step one. In the next post, we explore **production architectures** that solve it:
+Identifying the bottleneck is step one. In the next post, we push vLLM and SGLang to saturation to see what happens when this preprocessing bottleneck meets real GPU serving systems:
 
-- **vLLM's Async Engine** — How it structures the event loop to minimize preprocessing-induced blocking
-- **SGLang** — How Radix Attention caches preprocessing work to skip it entirely for shared conversation history
-- **The Sidecar Pattern** — Decoupling CPU-heavy preprocessing from the GPU inference worker
+- **The Utilization Illusion** — Why `nvidia-smi` shows 95% utilization while throughput stays flat
+- **The Radix Paradox** — Why SGLang's KV cache optimization cannot reach the GPU at high concurrency
+- **Decoupled Preprocessing** — What happens when you move Jinja and tokenization out of the inference server entirely
 
 ---
 
