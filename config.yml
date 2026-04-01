@@ -22,6 +22,8 @@ minify:
 # Metadata
 params:
   env: production
+  defaultTheme: light
+  disableThemeToggle: true
   title: "Pratik Patre"
   description: "Principal ML Systems Engineer at Atlassian. Writing about LLM production systems, ML infrastructure, and AI engineering."
   keywords:
@@ -44,15 +46,15 @@ params:
       Principal ML Systems Engineer @ Atlassian
 
       Writing about LLM production systems, ML infrastructure, and lessons from deploying AI at scale.
-    imageUrl: "images/profile.jpg"
+    imageUrl: "images/profile.png"
     imageWidth: 180
     imageHeight: 180
     imageTitle: "Pratik Patre"
     buttons:
-      - name: LLM Production
-        url: /llm-production/
-      - name: ML Engineering
-        url: /ml-engineering/
+      - name: Deep ML Systems
+        url: /deep-ml-systems/
+      - name: Engineering
+        url: /engineering/
       - name: About
         url: /about/
 
@@ -116,8 +118,8 @@ params:
   # Label customization
   label:
     text: "Pratik Patre"
-    icon: "images/favicon.ico"
-    iconHeight: 35
+    icon: "images/favicon-32x32.png"
+    iconHeight: 28
 
   # Analytics privacy
   analytics:
@@ -133,13 +135,13 @@ params:
 # Menu configuration
 menu:
   main:
-    - identifier: llm-production
-      name: LLM Production
-      url: /llm-production/
+    - identifier: deep-ml-systems
+      name: Deep ML Systems
+      url: /deep-ml-systems/
       weight: 10
-    - identifier: ml-engineering
-      name: ML Engineering
-      url: /ml-engineering/
+    - identifier: engineering
+      name: Engineering
+      url: /engineering/
       weight: 20
     - identifier: tags
       name: Tags
@@ -162,10 +164,9 @@ taxonomies:
 
 # Permalinks - clean URLs without dates
 permalinks:
-  llm-production: /llm-production/:slug/
-  ml-engineering: /ml-engineering/:slug/
-  research: /research/:slug/
+  deep-ml-systems: /deep-ml-systems/:slug/
   engineering: /engineering/:slug/
+  research: /research/:slug/
 
 # Output formats
 outputs:
