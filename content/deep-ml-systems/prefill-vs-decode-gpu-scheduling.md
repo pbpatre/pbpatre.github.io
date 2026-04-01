@@ -22,7 +22,9 @@ ShowPostNavLinks: true
 
 A user sends a 50-token question to your LLM API. The GPU is free. Prefill should take 2ms. Instead, the user waits 56ms — because a 4,000-token RAG request arrived one millisecond earlier and locked the GPU for a monolithic prefill pass.
 
-Standard inference benchmarks never show this. They use uniform request sizes, which means every request sees the same scheduling behaviour. The P99 looks clean because variance is artificially zero. Ship that system to production — where chat and RAG traffic arrive on the same endpoint — and you discover a scheduling collision that no amount of kernel optimisation can fix.
+**TPS is not user experience.** A leaderboard showing 4,000 tokens/second in aggregate tells you nothing about the 1% of users staring at a spinner. What users actually measure is two things: *responsiveness* — did the answer start immediately? — and *smoothness* — did the text flow, or did it freeze mid-sentence? Standard benchmarks use uniform request sizes, which means every request sees identical scheduling behaviour. P99 looks clean because variance is structurally zero. These are *happy path* benchmarks.
+
+Real production traffic is bimodal: a mix of short chat turns (50 tokens, instant reply expected) and long RAG queries (4,000 tokens, high compute required). When both hit the same endpoint, the GPU scheduler must juggle two incompatible contracts simultaneously. That juggling act is invisible in uniform benchmarks — and it is what this post quantifies.
 
 This post reproduces that collision on an NVIDIA L40S using a bimodal workload I designed specifically to stress-test GPU scheduling. The results led to a [vLLM contribution](https://github.com/vllm-project/vllm/pull/34146) — a `BimodalDataset` benchmark that makes this trade-off measurable in CI.
 
@@ -35,8 +37,6 @@ This post reproduces that collision on an NVIDIA L40S using a bimodal workload I
 ## Two Phases, Two Physics
 
 Every LLM request passes through two phases with radically different computational profiles. Understanding the physics of each is prerequisite to understanding why scheduling is hard.
-
-![Prefill vs Decode phases on a GPU](/images/posts/post-prefill-decode-1.jpg)
 
 ### Prefill: The Burst
 
@@ -76,8 +76,6 @@ To reproduce the convoy effect under controlled conditions, I ran two workload p
 
 **Bimodal stress test:** 80% short chat requests + 20% long RAG requests (2,000–4,000 tokens). This is closer to real production traffic.
 
-![Bimodal workload design](/images/posts/post-prefill-decode-3.jpg)
-
 ### The Results
 
 | Metric | Uniform | Bimodal | Impact |
@@ -85,8 +83,6 @@ To reproduce the convoy effect under controlled conditions, I ran two workload p
 | Short P50 TTFT | 13 ms | 15 ms | +11% |
 | Short P99 TTFT | 18 ms | 56 ms | **+216%** |
 | Throughput (tok/s) | 3,762 | 2,372 | -37% |
-
-![Uniform vs bimodal TTFT comparison](/images/posts/post-prefill-decode-4.jpg)
 
 The P50 barely moves — most short requests still arrive when the GPU is free. But the P99 explodes: **56ms vs 18ms**. This is the 1-in-100 short request that landed behind a RAG prefill.
 
@@ -123,25 +119,18 @@ This eliminates gross HOL blocking. But my benchmarks revealed an inverse correl
 
 I ran the bimodal benchmark (70/30 split) across three chunk sizes on the L40S. The results from my [vLLM PR benchmarks](https://github.com/vllm-project/vllm/pull/34146) show the trade-off precisely:
 
-**TTFT — Short Requests (50–150 input tokens):**
+| | Metric | Chunk 512 | Chunk 2048 | Chunk 8192 |
+|--|--------|-----------|------------|------------|
+| **TTFT** ↓ improves with larger chunks | Short P99 (ms) | 99.1 | 77.7 | 66.3 |
+| | Short P99/Median ratio | 7.0× | 5.3× | 4.6× |
+| **ITL** ↑ degrades with larger chunks | Short Max (ms) | 8.7 | 18.7 | 54.6 |
+| | Short % >10ms spike | 0.0% | 26.3% | 26.6% |
+| | Long % >10ms spike | 0.0% | 81.7% | 81.1% |
 
-| Metric | Chunk 512 | Chunk 2048 | Chunk 8192 |
-|--------|-----------|------------|------------|
-| Median TTFT (ms) | 14.2 | 14.5 | 14.3 |
-| P99 TTFT (ms) | 99.1 | 77.7 | 66.3 |
-| P99/Median ratio | 7.0× | 5.3× | 4.6× |
+![TTFT vs ITL trade-off across chunk sizes](/images/posts/chunked-prefill-tradeoff.jpg)
+*As chunk size increases, TTFT tail shrinks and ITL spikes grow — the inverse correlation is structural, not tunable away*
 
-**ITL — Decode stalls:**
-
-| Metric | Chunk 512 | Chunk 2048 | Chunk 8192 |
-|--------|-----------|------------|------------|
-| Short Max ITL (ms) | 8.7 | 18.7 | 54.6 |
-| Short % with >10ms spike | 0.0% | 26.3% | 26.6% |
-| Long % with >10ms spike | 0.0% | 81.7% | 81.1% |
-
-![TTFT vs ITL trade-off across chunk sizes](/images/posts/post-prefill-decode-5.jpg)
-
-The correlation is brutal: **lower TTFT tail → worse ITL stutters.** There is no chunk size that wins on both.
+The numbers confirm it: **lower TTFT tail → worse ITL stutters.** There is no chunk size that wins on both.
 
 ### Why the Trade-off Is Structural
 
@@ -150,18 +139,21 @@ Consider three users competing for the GPU:
 - **Blue:** An active user mid-stream, needing a decode token every ~20ms.
 - **Red:** A massive RAG request arriving with a 4,000-token prefill (~40ms of compute).
 - **Green:** A new chat user pressing Enter just after Red arrives.
+- **|OH|:** Overhead per chunk — kernel launch latency + memory swap between chunks.
 
 **Large chunks (8192) — "Fast Start, Frozen Stream":**
 
-![Large chunk scheduling: fast TTFT, frozen stream](/images/posts/post-prefill-decode-6.jpg)
+![Large chunk scheduling: fast TTFT, frozen stream for active users](/images/posts/new-request-large-chunk.jpg)
+*Large chunks let Red's prefill clear quickly — Green starts fast, but Blue's stream freezes for the full 40ms prefill duration*
 
-The scheduler runs Red's prefill in one solid block. Green gets a fast TTFT (the prefill clears quickly), but **Blue freezes** — no decode tokens for 40ms. The stream stutters visibly.
+The scheduler runs Red's prefill in one solid block. Green gets a fast TTFT (the prefill clears quickly, no |OH| overhead), but **Blue freezes** — no decode tokens for ~40ms. The stream stutters visibly.
 
 **Small chunks (512) — "Smooth Stream, Slow Start":**
 
-![Small chunk scheduling: smooth stream, slow TTFT](/images/posts/post-prefill-decode-7.jpg)
+![Small chunk scheduling: smooth stream, delayed start for new requests](/images/posts/new-request-small-chunk.jpg)
+*Small chunks interleave Red's prefill with Blue's decode tokens — Blue sees a smooth stream, but Green waits longer as |OH| accumulates across every chunk boundary*
 
-The scheduler slices Red's prefill into tiny pieces, yielding to Blue between each chunk. Blue sees a smooth 8ms stream. But every slice adds overhead (kernel launch + memory swap), so Red's total prefill time stretches from 40ms to 50ms+. **Green waits longer** because the chunking overhead delays Red's completion.
+The scheduler slices Red's prefill into small pieces, yielding to Blue between each chunk. Blue sees a smooth 8ms stream. But every slice adds |OH| (kernel launch + memory swap), so Red's total prefill time stretches from 40ms to 50ms+. **Green waits longer** because the accumulated overhead delays Red's completion.
 
 {{< callout type="warning" title="The Core Insight" >}}
 Chunked prefill does not eliminate latency. It redistributes it. You can concentrate the pain into a single stutter (large chunks) or spread it as overhead that delays new arrivals (small chunks). There is no setting that avoids both.
@@ -199,24 +191,20 @@ There is no free lunch in GPU scheduling. The bimodal experiments prove that opt
 
 ## Making It Measurable: The vLLM Contribution
 
-The reason this trade-off goes undetected is that standard benchmarks use uniform request distributions. To close that gap, I submitted a [BimodalDataset to vLLM](https://github.com/vllm-project/vllm/pull/34146) that generates configurable mixed workloads directly in vLLM's benchmarking suite.
+The reason this trade-off goes undetected is that standard benchmarks use uniform request distributions. To close that gap, I contributed a [BimodalDataset to vLLM](https://github.com/vllm-project/vllm/pull/34146) — a configurable mixed workload generator that ships directly in vLLM's benchmarking suite.
 
-The implementation adds `--dataset-name bimodal` with tunable parameters:
+With it, reproducing the convoy effect is a single flag:
 
 ```bash
-# Default: 80% short (50-150 tokens) + 20% long (3000-5000 tokens)
+# 80% short chat + 20% long RAG (default)
 vllm bench serve --dataset-name bimodal --num-prompts 500
 
-# Custom ratio: 70% short + 30% long
-vllm bench serve --dataset-name bimodal --bimodal-short-ratio 0.7
-
-# Custom ranges
-vllm bench serve --dataset-name bimodal \
-    --bimodal-short-input-min 50 --bimodal-short-input-max 200 \
+# Tunable ratio and token ranges
+vllm bench serve --dataset-name bimodal --bimodal-short-ratio 0.7 \
     --bimodal-long-input-min 2000 --bimodal-long-input-max 5000
 ```
 
-The PR includes 11 unit tests covering seed determinism, distribution validation, and edge cases. The bimodal dataset is what makes the TTFT-vs-ITL trade-off visible in CI — without it, chunked prefill configurations are tuned against uniform benchmarks that cannot expose the inverse correlation.
+This makes the TTFT-vs-ITL trade-off reproducible in CI. Chunked prefill configurations can now be tuned against workloads that actually resemble production traffic — not uniform benchmarks that structurally cannot expose the inverse correlation.
 
 ---
 
