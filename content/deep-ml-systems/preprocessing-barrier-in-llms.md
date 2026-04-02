@@ -4,8 +4,8 @@ date: 2024-01-15
 draft: false
 slug: "preprocessing-barrier-in-llms"
 author: "Pratik Patre"
-description: "A Jinja2 template loop takes 7% of single-request latency. At 32 concurrent threads, it becomes the throughput ceiling — Python's GIL serializes the one stage nobody thought to benchmark."
-summary: "A Jinja2 template loop takes 7% of single-request latency. At 32 concurrent threads, it becomes the throughput ceiling. This post traces how Python's GIL converts an innocent-looking preprocessing step into a hard scaling wall."
+description: "A Jinja2 template loop takes 7% of single-request latency. At production concurrency, it becomes the throughput ceiling — Python's GIL serializes the one stage nobody thought to benchmark."
+summary: "A Jinja2 template loop takes 7% of single-request latency. At production concurrency, it becomes the throughput ceiling. This post traces how Python's GIL converts an innocent-looking preprocessing step into a hard scaling wall."
 tags: ["LLM", "Inference", "CPU", "Preprocessing", "GIL", "Performance", "Benchmarks", "vLLM"]
 categories: ["Deep ML Systems"]
 series: ["The Preprocessing Barrier"]

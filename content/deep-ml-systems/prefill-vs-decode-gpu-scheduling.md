@@ -136,7 +136,7 @@ The numbers confirm it: **lower TTFT tail → worse ITL stutters.** There is no 
 
 Consider three users competing for the GPU:
 
-- **Blue:** An active user mid-stream, needing a decode token every ~20ms.
+- **Blue:** An active user mid-stream, needing a decode token delivered every ~20ms to maintain a smooth stream.
 - **Red:** A massive RAG request arriving with a 4,000-token prefill (~40ms of compute).
 - **Green:** A new chat user pressing Enter just after Red arrives.
 - **|OH|:** Overhead per chunk — kernel launch latency + memory swap between chunks.

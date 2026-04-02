@@ -181,7 +181,7 @@ Peak memory: 29.81 GB  |  Throughput: 8,381 tokens/sec
   TOTAL:                  ~29.8 GB → MASSIVE HEADROOM
 ```
 
-Combining both techniques attacks both memory axes simultaneously. Static state is sharded (50% per-GPU reduction), activations are checkpointed (82% reduction). A workload that OOMed a 140 GB H200 now fits in under 30 GB — comfortably within the capacity of a consumer RTX 4090. The 80% total reduction from baseline DDP is not magic; it is the product of two independent compressions applied to two independent memory pools.
+Combining both techniques attacks both memory axes simultaneously. Static state is sharded (50% per-GPU reduction), activations are checkpointed (82% reduction). A workload that OOMed a 140 GB H200 now fits in under 30 GB — a 5× reduction that brings it within range of a single consumer-grade GPU. The 80% total reduction from baseline DDP is not magic; it is the product of two independent compressions applied to two independent memory pools.
 
 ---
 
