@@ -4,8 +4,8 @@ date: 2026-04-02
 draft: false
 slug: "vram-anatomy-why-llm-training-ooms"
 author: "Pratik Patre"
-description: "A 3.1B parameter model is 6.2 GB of weights. It consumes 148 GB of VRAM during training and OOMs on a 140 GB H200. I profiled every memory component — weights, optimizer states, gradients, and activations — and ran a four-quadrant experiment with DDP, FSDP, and activation checkpointing to measure exactly what each technique saves."
-summary: "A 3.1B parameter model weighs 6.2 GB. Training it consumes 148 GB — and OOMs on a $30K H200. The optimizer alone is 4× larger than the model. I broke down every VRAM component and ran DDP × FSDP × activation checkpointing experiments on 2× H200s to measure where the memory goes and what each optimization actually buys."
+description: "A 3.1B-parameter model weighs 6.2 GB in BF16. Training it demands 148 GB — the optimizer alone is 4× larger than the model. The question is where those 148 GB actually go, and what each optimization technique trades away to reclaim them."
+summary: "A 3.1B-parameter model weighs 6.2 GB in BF16. Training it demands 148 GB — the optimizer alone is 4× larger than the model. This post dissects where those 148 GB actually go and what each optimization technique trades away to reclaim them."
 tags: ["LLM", "Training", "VRAM", "OOM", "DDP", "FSDP", "Activation Checkpointing", "GPU Memory", "Distributed Training", "PyTorch", "AdamW", "H200"]
 categories: ["Deep ML Systems"]
 cover:

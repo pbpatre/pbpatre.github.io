@@ -4,8 +4,8 @@ date: 2024-02-12
 draft: false
 slug: "preprocessing-barrier-part-2"
 author: "Pratik Patre"
-description: "High GPU utilization but flat throughput? Your inference server may be suffering from the Utilization Illusion — where the GPU looks busy but is actually idling between batches, starved by Python preprocessing."
-summary: "I benchmark vLLM and SGLang under saturation load and expose the Utilization Illusion: high nvidia-smi numbers masking GPU starvation caused by Python preprocessing. Then I show how decoupled preprocessing recovers 40% of hidden GPU capacity."
+description: "nvidia-smi reads 95% GPU utilization while throughput stays flat and latency degrades 18×. Decoupling preprocessing from the inference loop recovered 40% of GPU capacity the monolithic architecture was leaving on the table."
+summary: "`nvidia-smi` reads 95% GPU utilization while throughput stays flat and latency degrades 18×. This post investigates the Utilization Illusion — and shows how decoupling preprocessing recovered 40% of GPU capacity the monolithic architecture left on the table."
 tags: ["LLM", "Inference", "vLLM", "SGLang", "GPU", "Preprocessing", "Production", "Benchmarks", "Radix Attention", "Throughput"]
 categories: ["Deep ML Systems"]
 series: ["The Preprocessing Barrier"]

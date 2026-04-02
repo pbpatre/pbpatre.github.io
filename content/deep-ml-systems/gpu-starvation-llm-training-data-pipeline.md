@@ -4,8 +4,8 @@ date: 2026-04-01
 draft: false
 slug: "gpu-starvation-llm-training-data-pipeline"
 author: "Pratik Patre"
-description: "An L40S pushes 181 TFLOPS — but in a naive training loop, the GPU spends 76% of its time idle, waiting on disk I/O, CPU tokenization, padding waste, and the PCIe bus. I built seven standalone benchmarks to measure exactly where the time goes."
-summary: "nvidia-smi shows 100% GPU utilization while the GPU computes on 2.3% real tokens. I profiled every stage of an LLM training data pipeline on an NVIDIA L40S — disk I/O, CPU preprocessing, padding waste, PCIe transfers, and the full loop — and found that the bottleneck is almost never where engineers expect it."
+description: "nvidia-smi reports 100% GPU utilization while 97.7% of compute cycles are wasted on padding tokens. Sequence packing alone recovers a 42× throughput gain — but only after profiling reveals the bottleneck is almost never where engineers expect it."
+summary: "`nvidia-smi` reports 100% GPU utilization while 97.7% of compute cycles are wasted on padding tokens. Sequence packing alone recovers a 42× throughput gain. This post profiles every stage of the five-stage data pipeline to find where the real bottlenecks hide."
 tags: ["LLM", "Training", "GPU", "Data Pipeline", "PyTorch", "DataLoader", "PCIe", "Sequence Packing", "Padding", "Throughput", "Profiling", "NVMe"]
 categories: ["Deep ML Systems"]
 cover:

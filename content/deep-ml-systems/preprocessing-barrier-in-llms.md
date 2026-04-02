@@ -4,8 +4,8 @@ date: 2024-01-15
 draft: false
 slug: "preprocessing-barrier-in-llms"
 author: "Pratik Patre"
-description: "GPU utilization hovering at 60-70%? The bottleneck might be your CPU. We benchmark the LLM preprocessing pipeline — templating, tokenization, collation — and show how Python's GIL becomes a hard ceiling on inference throughput."
-summary: "We profile the three-stage CPU preprocessing pipeline in LLM inference — Jinja templating, tokenization, and collation — and reveal how Python's GIL prevents parallelism from solving the bottleneck at scale."
+description: "A Jinja2 template loop takes 7% of single-request latency. At 32 concurrent threads, it becomes the throughput ceiling — Python's GIL serializes the one stage nobody thought to benchmark."
+summary: "A Jinja2 template loop takes 7% of single-request latency. At 32 concurrent threads, it becomes the throughput ceiling. This post traces how Python's GIL converts an innocent-looking preprocessing step into a hard scaling wall."
 tags: ["LLM", "Inference", "CPU", "Preprocessing", "GIL", "Performance", "Benchmarks", "vLLM"]
 categories: ["Deep ML Systems"]
 series: ["The Preprocessing Barrier"]

@@ -4,8 +4,8 @@ date: 2024-03-20
 draft: false
 slug: "prefill-vs-decode-gpu-scheduling"
 author: "Pratik Patre"
-description: "Standard benchmarks use uniform request sizes, hiding the scheduling collision that defines real LLM traffic. I benchmark bimodal workloads on an L40S and expose the TTFT-vs-ITL trade-off that chunked prefill forces you to make."
-summary: "Uniform benchmarks say TTFT is 17ms. Bimodal production traffic says 56ms. I reproduce the convoy effect, benchmark chunked prefill across three chunk sizes, and show why GPU scheduling is a trade-off between responsiveness and stream smoothness — not a problem with a solution."
+description: "A 50-token chat question should prefill in 2 ms. In bimodal production traffic, P99 TTFT spikes to 56 ms — a 216% penalty from a single long RAG request arriving one millisecond earlier. The GPU scheduler is forced to choose between responsiveness and throughput, and uniform benchmarks hide the collision entirely."
+summary: "A 50-token chat question should prefill in 2 ms. In bimodal production traffic, P99 TTFT spikes to 56 ms — a 216% penalty from a single long RAG request arriving one millisecond earlier. This post measures what happens when two incompatible workloads share a GPU scheduler."
 tags: ["LLM", "Inference", "GPU", "Scheduling", "Prefill", "Decode", "Chunked Prefill", "vLLM", "Latency", "TTFT", "ITL"]
 categories: ["Deep ML Systems"]
 cover:
