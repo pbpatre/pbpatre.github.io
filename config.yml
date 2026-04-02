@@ -63,9 +63,9 @@ params:
     - name: github
       url: "https://github.com/pbpatre"
     - name: linkedin
-      url: "https://linkedin.com/in/pratikpatre"
+      url: "https://www.linkedin.com/in/pratik-patre"
     - name: twitter
-      url: "https://twitter.com/pratikpatre"
+      url: "https://twitter.com/pp_patre"
     # - name: email
     #   url: "mailto:your.email@example.com"  # Uncomment and add your email
     - name: rss

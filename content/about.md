@@ -16,5 +16,5 @@ I write about LLM production systems and ML engineering — the hard-won lessons
 
 **Links**
 - GitHub: [github.com/pbpatre](https://github.com/pbpatre)
-- LinkedIn: [linkedin.com/in/pratikpatre](https://linkedin.com/in/pratikpatre)
-- Twitter / X: [@pratikpatre](https://twitter.com/pratikpatre)
+- LinkedIn: [linkedin.com/in/pratik-patre](https://www.linkedin.com/in/pratik-patre)
+- Twitter / X: [@pp_patre](https://twitter.com/pp_patre)
