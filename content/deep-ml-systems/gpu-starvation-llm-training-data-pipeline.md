@@ -215,4 +215,4 @@ Several observations generalize beyond these specific benchmarks. The 20× I/O g
 
 These are not tuning tips. They are structural properties of the pipeline — the kind that reappear in different forms across frameworks, hardware generations, and model architectures. Measuring them once, in isolation, makes the diagnosis faster every time they surface in a new system.
 
-The next post moves beyond the single-node data pipeline into distributed training — specifically, what `torch.profiler` traces reveal about NCCL communication overhead and how the compute-to-communication ratio evolves across model sizes and network topologies. The [`profile_trace_analyzer.py`](https://github.com/pbpatre/llm-system-benchmarks/blob/main/training/analysis/profile_trace_analyzer.py) script in the benchmark repo is the starting point for that investigation.
+The next post moves beyond the single-node data pipeline into distributed training — specifically, what `torch.profiler` traces reveal about NCCL communication overhead and how the compute-to-communication ratio evolves across model sizes and network topologies.
