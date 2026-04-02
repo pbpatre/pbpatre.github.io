@@ -1,7 +1,7 @@
 ---
 title: "GPU Starvation: Profiling the LLM Training Data Pipeline"
 date: 2026-04-01
-draft: false
+draft: true
 slug: "gpu-starvation-llm-training-data-pipeline"
 author: "Pratik Patre"
 description: "nvidia-smi reports 100% GPU utilization while 97.7% of compute cycles are wasted on padding tokens. Sequence packing alone recovers a 42× throughput gain — but only after profiling reveals the bottleneck is almost never where engineers expect it."

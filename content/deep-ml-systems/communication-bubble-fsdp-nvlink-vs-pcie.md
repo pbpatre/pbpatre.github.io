@@ -1,7 +1,7 @@
 ---
 title: "The Communication Bubble: FSDP on NVLink vs. PCIe"
 date: 2026-04-02
-draft: false
+draft: true
 slug: "communication-bubble-fsdp-nvlink-vs-pcie"
 author: "Pratik Patre"
 description: "FSDP turns every forward-pass layer into a network call. On a slow interconnect, AllGather degrades 20× — yet the step time grows by only 29 ms. The difference between those two numbers is the communication bubble, and it's controlled entirely by the wire."

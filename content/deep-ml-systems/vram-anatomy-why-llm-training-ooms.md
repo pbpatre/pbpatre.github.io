@@ -1,7 +1,7 @@
 ---
 title: "VRAM Anatomy: Why Your LLM Training OOMs"
 date: 2026-04-02
-draft: false
+draft: true
 slug: "vram-anatomy-why-llm-training-ooms"
 author: "Pratik Patre"
 description: "A 3.1B-parameter model weighs 6.2 GB in BF16. Training it demands 148 GB — the optimizer alone is 4× larger than the model. The question is where those 148 GB actually go, and what each optimization technique trades away to reclaim them."
